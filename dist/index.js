@@ -9,10 +9,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-// index.ts
 const positionService_1 = require("./services/positionService");
 const csvWriter_1 = require("./services/csvWriter");
-const positionAnalyzer_1 = require("./services/positionAnalyzer");
+const summaryCSVGenerator_1 = require("./services/summaryCSVGenerator");
 const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -21,26 +20,10 @@ function main() {
             const positions = yield (0, positionService_1.retrievePositions)(WALLET_ADDRESS);
             console.log('Retrieved positions:', positions);
             yield (0, csvWriter_1.writePositionsToCSV)(positions);
-            console.log('CSV file has been written with the retrieved positions.');
-            // Analyze each position
-            positions.forEach((position, index) => {
-                const analysisResults = (0, positionAnalyzer_1.analyzePosition)(position);
-                console.log(`\nAnalysis for Position ${index + 1} (${position.publicKey.toString()}):`);
-                analysisResults.forEach((result, resultIndex) => {
-                    console.log(`Position Variant ${resultIndex + 1}:`);
-                    console.log('Token Quantities:', {
-                        tokenX: `${result.tokenXQty} (${position.tokenX.publicKey.toString()})`,
-                        tokenY: `${result.tokenYQty} (${position.tokenY.publicKey.toString()})`
-                    });
-                    console.log('Boundaries:', {
-                        lower: result.lowerBoundary,
-                        upper: result.upperBoundary
-                    });
-                    console.log('Liquidity Profile:', result.liquidityProfile);
-                    console.log('Is In Range:', result.isInRange);
-                    console.log('Unclaimed Fees:', result.unclaimedFees);
-                });
-            });
+            console.log('Raw CSV file has been written.');
+            // Generate or update the summary CSV from the raw data
+            yield (0, summaryCSVGenerator_1.generateSummaryCSV)();
+            console.log('Summary CSV has been updated.');
         }
         catch (error) {
             console.error('Error processing positions:', error);

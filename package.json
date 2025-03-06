@@ -9,6 +9,7 @@
     "dependencies": {
         "@meteora-ag/dlmm": "^1.0.48",
         "@solana/web3.js": "^1.73.3",
+        "csv-parser": "^3.2.0",
         "csv-writer": "^1.6.0",
         "node-cron": "^3.0.0"
     },
