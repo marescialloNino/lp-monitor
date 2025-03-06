@@ -3,11 +3,10 @@ import { PublicKey } from '@solana/web3.js';
 import DLMM from '@meteora-ag/dlmm';
 import { getSolanaConnection } from '../chains/solana';
 import { PositionInfo } from '../services/types';
-import BN from 'bn.js'; // npm install bn.js
-import fs from 'fs/promises'; // Node.js built-in for async file operations
+import BN from 'bn.js';
+import fs from 'fs/promises';
 import util from 'util';
 
-// Retry utility
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   let lastError: Error | undefined = undefined;
   for (let i = 0; i < retries; i++) {
@@ -25,7 +24,6 @@ async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
   throw new Error('No result after retries and no error captured');
 }
 
-// Log to file utility
 async function logToFile(filePath: string, message: string): Promise<void> {
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${message}\n`;
@@ -39,14 +37,13 @@ async function logToFile(filePath: string, message: string): Promise<void> {
 export async function fetchPositions(walletAddress: string): Promise<PositionInfo[]> {
   const connection = getSolanaConnection();
   const user = new PublicKey(walletAddress);
-  const logFilePath = './positionData.log'; // File will be created in project root
+  const logFilePath = './positionData.log';
 
   try {
     const positionsData: Map<string, any> = await withRetry(async () => {
       return await DLMM.getAllLbPairPositionsByUser(connection, user);
     });
 
-    // Log raw positions data to file
     await logToFile(logFilePath, 'Raw positions data:\n' + util.inspect(positionsData, { depth: null }));
 
     if (!positionsData || positionsData.size === 0) {
@@ -58,19 +55,18 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
     const positionInfos: PositionInfo[] = [];
 
     positionsData.forEach((pos: any, positionKey: string) => {
-      console.log(`Processing position ${positionKey}`); // Minimal terminal output
+      console.log(`Processing position ${positionKey}`);
 
       pos.lbPairPositionsData.forEach(async (positionDataEntry: any, subIndex: number) => {
         try {
           const positionData = positionDataEntry.positionData || {};
-
-          // Log expanded positionData to file
           const positionPubKey = Array.isArray(positionDataEntry.publicKey) 
             ? positionDataEntry.publicKey[0]?.toString() 
             : positionDataEntry.publicKey?.toString() || `${positionKey}-${subIndex}`;
+
           await logToFile(
             logFilePath,
-            `Expanded positionData for ${positionPubKey}:\n` + 
+            `Expanded positionData for ${positionPubKey}:\n` +
             util.inspect(positionData, { depth: null })
           );
 
@@ -80,21 +76,16 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
           const tokenXDecimals = pos.tokenX?.decimal || 0;
           const tokenYDecimals = pos.tokenY?.decimal || 0;
 
-          // Handle fees
           const rawFeeX = positionData.feeX;
           const rawFeeY = positionData.feeY;
           await logToFile(logFilePath, `Raw fees for ${positionPubKey}: feeX=${rawFeeX}, feeY=${rawFeeY}`);
 
-          const feeX = rawFeeX instanceof BN 
-            ? rawFeeX.toNumber() 
-            : typeof rawFeeX === 'string' 
-              ? parseInt(rawFeeX, 16) 
-              : 0;
-          const feeY = rawFeeY instanceof BN 
-            ? rawFeeY.toNumber() 
-            : typeof rawFeeY === 'string' 
-              ? parseInt(rawFeeY, 16) 
-              : 0;
+          // Fee conversion
+          const feeX = rawFeeX instanceof BN ? rawFeeX.toNumber() : 0;
+          const feeY = rawFeeY instanceof BN ? rawFeeY.toNumber() : 0;
+          const scaledFeeX = feeX / Math.pow(10, tokenXDecimals);
+          const scaledFeeY = feeY / Math.pow(10, tokenYDecimals);
+          await logToFile(logFilePath, `Scaled fees for ${positionPubKey}: feeX=${scaledFeeX}, feeY=${scaledFeeY}`);
 
           const position: PositionInfo = {
             id: positionPubKey,
@@ -118,12 +109,8 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
             isInRange: pos.lbPair?.activeId && positionData.lowerBinId && positionData.upperBinId
               ? pos.lbPair.activeId >= positionData.lowerBinId && pos.lbPair.activeId <= positionData.upperBinId
               : false,
-            unclaimedFeeX: feeX 
-              ? (feeX / Math.pow(10, tokenXDecimals)).toString() 
-              : '0',
-            unclaimedFeeY: feeY 
-              ? (feeY / Math.pow(10, tokenYDecimals)).toString() 
-              : '0',
+            unclaimedFeeX: scaledFeeX.toString(),
+            unclaimedFeeY: scaledFeeY.toString(),
             liquidityProfile: positionData.positionBinData?.map((bin: any) => ({
               binId: parseFloat(bin.price),
               price: bin.price || '0',
@@ -132,7 +119,6 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
           };
 
           positionInfos.push(position);
-          // Log mapped position to file
           await logToFile(logFilePath, `Mapped position ${positionPubKey}:\n` + util.inspect(position, { depth: null }));
         } catch (error) {
           await logToFile(
@@ -144,7 +130,6 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
       });
     });
 
-    // Log all processed positions to file
     await logToFile(logFilePath, 'All processed positions:\n' + util.inspect(positionInfos, { depth: null }));
     console.log(`Processed positions logged to ${logFilePath}`);
     return positionInfos;

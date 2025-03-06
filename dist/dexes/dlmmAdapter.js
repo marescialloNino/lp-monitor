@@ -8,10 +8,9 @@ exports.fetchPositions = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const dlmm_1 = __importDefault(require("@meteora-ag/dlmm"));
 const solana_1 = require("../chains/solana");
-const bn_js_1 = __importDefault(require("bn.js")); // npm install bn.js
-const promises_1 = __importDefault(require("fs/promises")); // Node.js built-in for async file operations
+const bn_js_1 = __importDefault(require("bn.js"));
+const promises_1 = __importDefault(require("fs/promises"));
 const util_1 = __importDefault(require("util"));
-// Retry utility
 async function withRetry(fn, retries = 3) {
     let lastError = undefined;
     for (let i = 0; i < retries; i++) {
@@ -29,7 +28,6 @@ async function withRetry(fn, retries = 3) {
     }
     throw new Error('No result after retries and no error captured');
 }
-// Log to file utility
 async function logToFile(filePath, message) {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}\n`;
@@ -43,12 +41,11 @@ async function logToFile(filePath, message) {
 async function fetchPositions(walletAddress) {
     const connection = (0, solana_1.getSolanaConnection)();
     const user = new web3_js_1.PublicKey(walletAddress);
-    const logFilePath = './positionData.log'; // File will be created in project root
+    const logFilePath = './positionData.log';
     try {
         const positionsData = await withRetry(async () => {
             return await dlmm_1.default.getAllLbPairPositionsByUser(connection, user);
         });
-        // Log raw positions data to file
         await logToFile(logFilePath, 'Raw positions data:\n' + util_1.default.inspect(positionsData, { depth: null }));
         if (!positionsData || positionsData.size === 0) {
             await logToFile(logFilePath, 'No positions returned from DLMM.');
@@ -57,11 +54,10 @@ async function fetchPositions(walletAddress) {
         }
         const positionInfos = [];
         positionsData.forEach((pos, positionKey) => {
-            console.log(`Processing position ${positionKey}`); // Minimal terminal output
+            console.log(`Processing position ${positionKey}`);
             pos.lbPairPositionsData.forEach(async (positionDataEntry, subIndex) => {
                 try {
                     const positionData = positionDataEntry.positionData || {};
-                    // Log expanded positionData to file
                     const positionPubKey = Array.isArray(positionDataEntry.publicKey)
                         ? positionDataEntry.publicKey[0]?.toString()
                         : positionDataEntry.publicKey?.toString() || `${positionKey}-${subIndex}`;
@@ -71,20 +67,15 @@ async function fetchPositions(walletAddress) {
                     const upperBin = positionData.positionBinData?.find((bin) => bin.binId === positionData.upperBinId);
                     const tokenXDecimals = pos.tokenX?.decimal || 0;
                     const tokenYDecimals = pos.tokenY?.decimal || 0;
-                    // Handle fees
                     const rawFeeX = positionData.feeX;
                     const rawFeeY = positionData.feeY;
                     await logToFile(logFilePath, `Raw fees for ${positionPubKey}: feeX=${rawFeeX}, feeY=${rawFeeY}`);
-                    const feeX = rawFeeX instanceof bn_js_1.default
-                        ? rawFeeX.toNumber()
-                        : typeof rawFeeX === 'string'
-                            ? parseInt(rawFeeX, 16)
-                            : 0;
-                    const feeY = rawFeeY instanceof bn_js_1.default
-                        ? rawFeeY.toNumber()
-                        : typeof rawFeeY === 'string'
-                            ? parseInt(rawFeeY, 16)
-                            : 0;
+                    // Fee conversion
+                    const feeX = rawFeeX instanceof bn_js_1.default ? rawFeeX.toNumber() : 0;
+                    const feeY = rawFeeY instanceof bn_js_1.default ? rawFeeY.toNumber() : 0;
+                    const scaledFeeX = feeX / Math.pow(10, tokenXDecimals);
+                    const scaledFeeY = feeY / Math.pow(10, tokenYDecimals);
+                    await logToFile(logFilePath, `Scaled fees for ${positionPubKey}: feeX=${scaledFeeX}, feeY=${scaledFeeY}`);
                     const position = {
                         id: positionPubKey,
                         owner: walletAddress,
@@ -107,12 +98,8 @@ async function fetchPositions(walletAddress) {
                         isInRange: pos.lbPair?.activeId && positionData.lowerBinId && positionData.upperBinId
                             ? pos.lbPair.activeId >= positionData.lowerBinId && pos.lbPair.activeId <= positionData.upperBinId
                             : false,
-                        unclaimedFeeX: feeX
-                            ? (feeX / Math.pow(10, tokenXDecimals)).toString()
-                            : '0',
-                        unclaimedFeeY: feeY
-                            ? (feeY / Math.pow(10, tokenYDecimals)).toString()
-                            : '0',
+                        unclaimedFeeX: scaledFeeX.toString(),
+                        unclaimedFeeY: scaledFeeY.toString(),
                         liquidityProfile: positionData.positionBinData?.map((bin) => ({
                             binId: parseFloat(bin.price),
                             price: bin.price || '0',
@@ -120,7 +107,6 @@ async function fetchPositions(walletAddress) {
                         })) || [],
                     };
                     positionInfos.push(position);
-                    // Log mapped position to file
                     await logToFile(logFilePath, `Mapped position ${positionPubKey}:\n` + util_1.default.inspect(position, { depth: null }));
                 }
                 catch (error) {
@@ -129,7 +115,6 @@ async function fetchPositions(walletAddress) {
                 }
             });
         });
-        // Log all processed positions to file
         await logToFile(logFilePath, 'All processed positions:\n' + util_1.default.inspect(positionInfos, { depth: null }));
         console.log(`Processed positions logged to ${logFilePath}`);
         return positionInfos;
