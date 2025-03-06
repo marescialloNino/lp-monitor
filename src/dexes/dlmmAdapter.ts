@@ -54,10 +54,10 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
 
     const positionInfos: PositionInfo[] = [];
 
-    positionsData.forEach((pos: any, positionKey: string) => {
+    for (const [positionKey, pos] of positionsData) {
       console.log(`Processing position ${positionKey}`);
 
-      pos.lbPairPositionsData.forEach(async (positionDataEntry: any, subIndex: number) => {
+      for (const [subIndex, positionDataEntry] of pos.lbPairPositionsData.entries()) {
         try {
           const positionData = positionDataEntry.positionData || {};
           const positionPubKey = Array.isArray(positionDataEntry.publicKey) 
@@ -80,7 +80,6 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
           const rawFeeY = positionData.feeY;
           await logToFile(logFilePath, `Raw fees for ${positionPubKey}: feeX=${rawFeeX}, feeY=${rawFeeY}`);
 
-          // Fee conversion
           const feeX = rawFeeX instanceof BN ? rawFeeX.toNumber() : 0;
           const feeY = rawFeeY instanceof BN ? rawFeeY.toNumber() : 0;
           const scaledFeeX = feeX / Math.pow(10, tokenXDecimals);
@@ -127,8 +126,8 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
           );
           console.error(`Error mapping position ${positionDataEntry.publicKey || subIndex} in ${positionKey}:`, error);
         }
-      });
-    });
+      }
+    }
 
     await logToFile(logFilePath, 'All processed positions:\n' + util.inspect(positionInfos, { depth: null }));
     console.log(`Processed positions logged to ${logFilePath}`);
