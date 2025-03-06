@@ -22,46 +22,30 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.writePositionsToCSV = void 0;
+// src/services/csvWriter.ts
 const csv_writer_1 = require("csv-writer");
 const path = __importStar(require("path"));
-/**
- * Custom replacer for JSON.stringify to convert BigInt values to strings.
- */
-function bigintReplacer(key, value) {
-    return typeof value === 'bigint' ? value.toString() : value;
-}
-/**
- * Writes the positions data to a CSV file.
- * For demonstration, we write two columns: Public Key and a JSON dump of the details.
- */
-function writePositionsToCSV(positions, filePath) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const outputPath = filePath || path.join(__dirname, '../../positions.csv');
-        const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
-            path: outputPath,
-            header: [
-                { id: 'publicKey', title: 'Public Key' },
-                { id: 'details', title: 'Details' }
-            ],
-            append: false // Change to true if you want to append to an existing file.
-        });
-        const records = positions.map(pos => ({
-            publicKey: pos.publicKey ? pos.publicKey.toString() : 'N/A',
-            details: JSON.stringify(pos, bigintReplacer)
-        }));
-        yield csvWriter.writeRecords(records);
-        console.log(`CSV file written to ${outputPath}`);
+async function writePositionsToCSV(positions, filePath) {
+    const outputPath = filePath || path.join(__dirname, '../../positions.csv');
+    const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
+        path: outputPath,
+        header: [
+            { id: 'id', title: 'Position ID' },
+            { id: 'owner', title: 'Owner' },
+            { id: 'pool', title: 'Pool' },
+            { id: 'amountX', title: 'Token X Qty' },
+            { id: 'amountY', title: 'Token Y Qty' },
+            { id: 'lowerBinId', title: 'Lower Boundary' },
+            { id: 'upperBinId', title: 'Upper Boundary' },
+            { id: 'isInRange', title: 'Is In Range' },
+            { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+            { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+        ],
+        append: false,
     });
+    await csvWriter.writeRecords(positions);
+    console.log(`Raw CSV written to ${outputPath}`);
 }
 exports.writePositionsToCSV = writePositionsToCSV;
