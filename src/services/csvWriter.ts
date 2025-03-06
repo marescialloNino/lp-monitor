@@ -1,34 +1,28 @@
+// src/services/csvWriter.ts
 import { createObjectCsvWriter } from 'csv-writer';
 import * as path from 'path';
+import { PositionInfo } from './types';
 
-/**
- * Custom replacer for JSON.stringify to convert BigInt values to strings.
- */
-function bigintReplacer(key: string, value: any): any {
-  return typeof value === 'bigint' ? value.toString() : value;
-}
-
-/**
- * Writes the positions data to a CSV file.
- * For demonstration, we write two columns: Public Key and a JSON dump of the details.
- */
-export async function writePositionsToCSV(positions: any[], filePath?: string): Promise<void> {
+export async function writePositionsToCSV(positions: PositionInfo[], filePath?: string): Promise<void> {
   const outputPath = filePath || path.join(__dirname, '../../positions.csv');
 
   const csvWriter = createObjectCsvWriter({
     path: outputPath,
     header: [
-      { id: 'publicKey', title: 'Public Key' },
-      { id: 'details', title: 'Details' }
+      { id: 'id', title: 'Position ID' },
+      { id: 'owner', title: 'Owner' },
+      { id: 'pool', title: 'Pool' },
+      { id: 'amountX', title: 'Token X Qty' },
+      { id: 'amountY', title: 'Token Y Qty' },
+      { id: 'lowerBinId', title: 'Lower Boundary' },
+      { id: 'upperBinId', title: 'Upper Boundary' },
+      { id: 'isInRange', title: 'Is In Range' },
+      { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+      { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
     ],
-    append: false // Change to true if you want to append to an existing file.
+    append: false,
   });
 
-  const records = positions.map(pos => ({
-    publicKey: pos.publicKey ? pos.publicKey.toString() : 'N/A',
-    details: JSON.stringify(pos, bigintReplacer)
-  }));
-
-  await csvWriter.writeRecords(records);
-  console.log(`CSV file written to ${outputPath}`);
+  await csvWriter.writeRecords(positions);
+  console.log(`Raw CSV written to ${outputPath}`);
 }
