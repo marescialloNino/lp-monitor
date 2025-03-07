@@ -29,6 +29,6 @@ function startScheduler() {
             console.error('Error during scheduled job:', error);
         }
     });
-    console.log('Scheduler started. The job will run every 30 minutes.');
+    console.log('Scheduler started. The job will run every 10 minutes.');
 }
 exports.startScheduler = startScheduler;

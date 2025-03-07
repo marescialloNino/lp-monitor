@@ -4,6 +4,7 @@ import { generateSummaryCSV } from './services/summaryCSVGenerator';
 import { startScheduler } from './services/scheduler';
 
 const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
+const SCHEDULE_INTERVAL_MINUTES = 30; // Configurable interval
 
 async function main() {
   try {
@@ -21,8 +22,8 @@ async function main() {
       console.log('LP meteora positions CSV generated successfully.');
     }
 
-    // Start the scheduler for every 30 minutes
-    startScheduler();
+    // Start the scheduler with configurable interval
+    startScheduler(SCHEDULE_INTERVAL_MINUTES);
   } catch (error) {
     console.error('Error during execution:', error);
   }

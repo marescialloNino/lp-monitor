@@ -6,12 +6,17 @@ import { generateSummaryCSV } from './summaryCSVGenerator';
 const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
 
 /**
- * Starts a scheduled job that runs every 10 minutes to retrieve LP positions
- * and append them to 'LP meteora positions.csv'.
+ * Starts a scheduled job to retrieve LP positions and append them to 'LP_meteora_positions.csv'.
+ * @param intervalMinutes - How often to run the job in minutes (e.g., 10 for every 10 minutes).
  */
-export function startScheduler() {
-  cron.schedule('*/10 * * * *', async () => {
-    console.log('Running scheduled job to retrieve LP positions...');
+export function startScheduler(intervalMinutes: number = 10): void {
+  if (!Number.isInteger(intervalMinutes) || intervalMinutes <= 0) {
+    throw new Error('Interval must be a positive integer in minutes');
+  }
+
+  const cronExpression = `*/${intervalMinutes} * * * *`;
+  cron.schedule(cronExpression, async () => {
+    console.log(`Running scheduled job to retrieve LP positions every ${intervalMinutes} minutes...`);
     try {
       const positions = await retrievePositions(WALLET_ADDRESS);
       if (!positions || positions.length === 0) {
@@ -25,5 +30,5 @@ export function startScheduler() {
     }
   });
 
-  console.log('Scheduler started. The job will run every 10 minutes.');
+  console.log(`Scheduler started. The job will run every ${intervalMinutes} minutes.`);
 }
