@@ -23,29 +23,35 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writePositionsToCSV = void 0;
+exports.writeLiquidityProfileToCSV = void 0;
 // src/services/csvWriter.ts
 const csv_writer_1 = require("csv-writer");
 const path = __importStar(require("path"));
-async function writePositionsToCSV(positions, filePath) {
-    const outputPath = filePath || path.join(__dirname, '../../positions.csv');
+async function writeLiquidityProfileToCSV(positions) {
+    const outputPath = path.join(__dirname, '../../liquidity_profile.csv');
     const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
         path: outputPath,
         header: [
-            { id: 'id', title: 'Position ID' },
-            { id: 'owner', title: 'Owner' },
-            { id: 'pool', title: 'Pool' },
-            { id: 'amountX', title: 'Token X Qty' },
-            { id: 'amountY', title: 'Token Y Qty' },
-            { id: 'lowerBinId', title: 'Lower Boundary' },
-            { id: 'upperBinId', title: 'Upper Boundary' },
-            { id: 'isInRange', title: 'Is In Range' },
-            { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
-            { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+            { id: 'positionId', title: 'Position ID' },
+            { id: 'binId', title: 'Bin ID' },
+            { id: 'price', title: 'Price' },
+            { id: 'positionLiquidity', title: 'Position Liquidity' },
+            { id: 'positionXAmount', title: 'Position X Amount' },
+            { id: 'positionYAmount', title: 'Position Y Amount' },
+            { id: 'liquidityShare', title: 'Liquidity Share (%)' },
         ],
         append: false,
     });
-    await csvWriter.writeRecords(positions);
-    console.log(`Raw CSV written to ${outputPath}`);
+    const records = positions.flatMap(pos => pos.liquidityProfile.map(entry => ({
+        positionId: pos.id,
+        binId: entry.binId,
+        price: entry.price,
+        positionLiquidity: entry.positionLiquidity,
+        positionXAmount: entry.positionXAmount,
+        positionYAmount: entry.positionYAmount,
+        liquidityShare: entry.liquidityShare,
+    })));
+    await csvWriter.writeRecords(records);
+    console.log(`Liquidity profile CSV written to ${outputPath}`);
 }
-exports.writePositionsToCSV = writePositionsToCSV;
+exports.writeLiquidityProfileToCSV = writeLiquidityProfileToCSV;

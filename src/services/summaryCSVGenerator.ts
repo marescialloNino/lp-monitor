@@ -4,7 +4,7 @@ import path from 'path';
 import { createObjectCsvWriter } from 'csv-writer';
 import { PositionInfo } from './types';
 
-const SUMMARY_CSV_PATH = path.join(__dirname, '../../summary.csv');
+const SUMMARY_CSV_PATH = path.join(__dirname, '../../LP_meteora_positions.csv');
 
 export async function generateSummaryCSV(positions: PositionInfo[]): Promise<void> {
   const csvWriter = createObjectCsvWriter({
@@ -23,11 +23,20 @@ export async function generateSummaryCSV(positions: PositionInfo[]): Promise<voi
     append: fs.existsSync(SUMMARY_CSV_PATH),
   });
 
-  const summaryRows = positions.map(pos => ({
-    timestamp: new Date().toISOString(),
-    ...pos,
-  }));
+  const summaryRows = positions
+    .filter(pos => !(pos.amountX === '0' && pos.amountY === '0')) // Exclude zero liquidity
+    .map(pos => ({
+      timestamp: new Date().toISOString(),
+      id: pos.id,
+      amountX: pos.amountX,
+      amountY: pos.amountY,
+      lowerBinId: pos.lowerBinId,
+      upperBinId: pos.upperBinId,
+      isInRange: pos.isInRange,
+      unclaimedFeeX: pos.unclaimedFeeX,
+      unclaimedFeeY: pos.unclaimedFeeY,
+    }));
 
   await csvWriter.writeRecords(summaryRows);
-  console.log(`Summary CSV updated with ${summaryRows.length} rows.`);
+  console.log(`LP meteora positions CSV updated with ${summaryRows.length} rows.`);
 }

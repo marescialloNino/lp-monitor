@@ -75,6 +75,23 @@ async function fetchPositions(walletAddress) {
                     const scaledFeeX = feeX / Math.pow(10, tokenXDecimals);
                     const scaledFeeY = feeY / Math.pow(10, tokenYDecimals);
                     await logToFile(logFilePath, `Scaled fees for ${positionPubKey}: feeX=${scaledFeeX}, feeY=${scaledFeeY}`);
+                    const liquidityProfile = positionData.positionBinData?.map((bin) => {
+                        const binLiq = parseFloat(bin.binLiquidity) || 0;
+                        const posLiq = parseFloat(bin.positionLiquidity) || 0;
+                        const share = binLiq > 0 ? (posLiq / binLiq * 100).toFixed(2) + '%' : '0%';
+                        return {
+                            binId: bin.binId,
+                            price: bin.price || '0',
+                            positionLiquidity: bin.positionLiquidity || '0',
+                            positionXAmount: bin.positionXAmount
+                                ? (parseFloat(bin.positionXAmount) / Math.pow(10, tokenXDecimals)).toString()
+                                : '0',
+                            positionYAmount: bin.positionYAmount
+                                ? (parseFloat(bin.positionYAmount) / Math.pow(10, tokenYDecimals)).toString()
+                                : '0',
+                            liquidityShare: share,
+                        };
+                    }) || [];
                     const position = {
                         id: positionPubKey,
                         owner: walletAddress,
@@ -99,11 +116,7 @@ async function fetchPositions(walletAddress) {
                             : false,
                         unclaimedFeeX: scaledFeeX.toString(),
                         unclaimedFeeY: scaledFeeY.toString(),
-                        liquidityProfile: positionData.positionBinData?.map((bin) => ({
-                            binId: parseFloat(bin.price),
-                            price: bin.price || '0',
-                            liquidity: bin.positionLiquidity || '0',
-                        })) || [],
+                        liquidityProfile,
                     };
                     positionInfos.push(position);
                     await logToFile(logFilePath, `Mapped position ${positionPubKey}:\n` + util_1.default.inspect(position, { depth: null }));

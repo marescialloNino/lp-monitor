@@ -1,25 +1,31 @@
 // src/services/types.ts
+
+export interface LiquidityProfileEntry {
+  binId: number;             // Bin identifier
+  price: string;             // Price at this bin
+  positionLiquidity: string; // Your liquidity contribution to this bin
+  positionXAmount: string;   // Your X token amount in this bin (adjusted for decimals)
+  positionYAmount: string;   // Your Y token amount in this bin (adjusted for decimals)
+  liquidityShare: string;    // Your percentage share of the bin’s total liquidity
+}
+
 export interface PositionInfo {
-  id: string;               // Position public key
-  owner: string;            // Wallet address
-  pool: string;             // LB Pair public key
-  tokenX: string;           // Mint address of token X
-  tokenY: string;           // Mint address of token Y
-  tokenXSymbol?: string;    // Optional symbol (e.g., SOL)
-  tokenYSymbol?: string;    // Optional symbol (e.g., USDC)
-  tokenXDecimals: number;   // Decimals for token X
-  tokenYDecimals: number;   // Decimals for token Y
-  amountX: string;          // Token X amount (adjusted for decimals)
-  amountY: string;          // Token Y amount (adjusted for decimals)
-  lowerBinId: number;       // Lower boundary (bin ID)
-  upperBinId: number;       // Upper boundary (bin ID)
-  activeBinId: number;      // Current active bin ID of the pool
-  isInRange: boolean;       // Whether the position is in range
-  unclaimedFeeX: string;    // Unclaimed fees for token X
-  unclaimedFeeY: string;    // Unclaimed fees for token Y
-  liquidityProfile: {       // Bin data for liquidity distribution
-    binId: number;
-    price: string;
-    liquidity: string;
-  }[];
+  id: string;
+  owner: string;
+  pool: string;
+  tokenX: string;
+  tokenY: string;
+  tokenXSymbol?: string;
+  tokenYSymbol?: string;
+  tokenXDecimals: number;
+  tokenYDecimals: number;
+  amountX: string;
+  amountY: string;
+  lowerBinId: number;
+  upperBinId: number;
+  activeBinId: number;
+  isInRange: boolean;
+  unclaimedFeeX: string;
+  unclaimedFeeY: string;
+  liquidityProfile: LiquidityProfileEntry[];
 }

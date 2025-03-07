@@ -2,7 +2,7 @@
 import { PublicKey } from '@solana/web3.js';
 import DLMM from '@meteora-ag/dlmm';
 import { getSolanaConnection } from '../chains/solana';
-import { PositionInfo } from '../services/types';
+import { PositionInfo, LiquidityProfileEntry } from '../services/types';
 import BN from 'bn.js';
 import fs from 'fs/promises';
 import util from 'util';
@@ -86,6 +86,24 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
           const scaledFeeY = feeY / Math.pow(10, tokenYDecimals);
           await logToFile(logFilePath, `Scaled fees for ${positionPubKey}: feeX=${scaledFeeX}, feeY=${scaledFeeY}`);
 
+          const liquidityProfile: LiquidityProfileEntry[] = positionData.positionBinData?.map((bin: any) => {
+            const binLiq = parseFloat(bin.binLiquidity) || 0;
+            const posLiq = parseFloat(bin.positionLiquidity) || 0;
+            const share = binLiq > 0 ? (posLiq / binLiq * 100).toFixed(2) + '%' : '0%';
+            return {
+              binId: bin.binId,
+              price: bin.price || '0',
+              positionLiquidity: bin.positionLiquidity || '0',
+              positionXAmount: bin.positionXAmount 
+                ? (parseFloat(bin.positionXAmount) / Math.pow(10, tokenXDecimals)).toString() 
+                : '0',
+              positionYAmount: bin.positionYAmount 
+                ? (parseFloat(bin.positionYAmount) / Math.pow(10, tokenYDecimals)).toString() 
+                : '0',
+              liquidityShare: share,
+            };
+          }) || [];
+
           const position: PositionInfo = {
             id: positionPubKey,
             owner: walletAddress,
@@ -110,11 +128,7 @@ export async function fetchPositions(walletAddress: string): Promise<PositionInf
               : false,
             unclaimedFeeX: scaledFeeX.toString(),
             unclaimedFeeY: scaledFeeY.toString(),
-            liquidityProfile: positionData.positionBinData?.map((bin: any) => ({
-              binId: parseFloat(bin.price),
-              price: bin.price || '0',
-              liquidity: bin.positionLiquidity || '0',
-            })) || [],
+            liquidityProfile,
           };
 
           positionInfos.push(position);
