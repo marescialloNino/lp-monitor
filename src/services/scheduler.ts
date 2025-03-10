@@ -7,7 +7,7 @@ const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
 
 /**
  * Starts a scheduled job to retrieve LP positions and append them to 'LP_meteora_positions.csv'.
- * @param intervalMinutes - How often to run the job in minutes (e.g., 10 for every 10 minutes).
+ * @param intervalMinutes - How often to run the job in minutes.
  */
 export function startScheduler(intervalMinutes: number = 10): void {
   if (!Number.isInteger(intervalMinutes) || intervalMinutes <= 0) {

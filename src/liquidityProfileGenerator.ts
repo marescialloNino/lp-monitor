@@ -1,8 +1,4 @@
 // node dist/liquidityProfileGenerator.js to run the scrpt
-
-
-
-
 import { retrievePositions } from './services/positionService';
 import { writeLiquidityProfileToCSV } from './services/csvWriter';
 

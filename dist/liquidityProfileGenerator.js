@@ -1,6 +1,6 @@
 "use strict";
-// node dist/liquidityProfileGenerator.js to run the scrpt
 Object.defineProperty(exports, "__esModule", { value: true });
+// node dist/liquidityProfileGenerator.js to run the scrpt
 const positionService_1 = require("./services/positionService");
 const csvWriter_1 = require("./services/csvWriter");
 const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
