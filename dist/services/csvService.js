@@ -12,16 +12,15 @@ const csv_writer_1 = require("csv-writer");
 const METEORA_CSV_PATH = path_1.default.join(__dirname, '../../LP_meteora_positions.csv');
 const LIQUIDITY_PROFILE_CSV_PATH = path_1.default.join(__dirname, '../../liquidity_profile.csv');
 const KRYSTAL_CSV_PATH = path_1.default.join(__dirname, '../../LP_krystal_positions.csv');
-async function writeCSV(filePath, records, headers) {
+async function writeCSV(filePath, records, headers, append = true) {
     const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
         path: filePath,
         header: headers,
-        append: fs_1.default.existsSync(filePath), // Append to existing file
+        append: append && fs_1.default.existsSync(filePath),
     });
     await csvWriter.writeRecords(records);
-    console.log(`CSV written to ${filePath} with ${records.length} rows`);
+    console.log(`CSV ${append ? 'appended' : 'written'} to ${filePath} with ${records.length} rows`);
 }
-// Helper function to calculate human-readable quantity for Krystal
 function calculateQuantity(rawAmount, decimals) {
     return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
@@ -42,6 +41,7 @@ async function generateAndWriteMeteoraCSV(walletAddress, positions) {
         { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
     ];
     const records = positions
+        .filter(pos => !(pos.amountX === '0' && pos.amountY === '0'))
         .map(pos => ({
         timestamp: new Date().toISOString(),
         walletAddress,
@@ -57,10 +57,10 @@ async function generateAndWriteMeteoraCSV(walletAddress, positions) {
         unclaimedFeeX: pos.unclaimedFeeX,
         unclaimedFeeY: pos.unclaimedFeeY,
     }));
-    await writeCSV(METEORA_CSV_PATH, records, headers);
+    await writeCSV(METEORA_CSV_PATH, records, headers, true);
 }
 exports.generateAndWriteMeteoraCSV = generateAndWriteMeteoraCSV;
-async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
+async function generateAndWriteLiquidityProfileCSV(_walletAddress, positions) {
     const headers = [
         { id: 'walletAddress', title: 'Wallet Address' },
         { id: 'positionId', title: 'Position ID' },
@@ -72,7 +72,7 @@ async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
         { id: 'liquidityShare', title: 'Liquidity Share' },
     ];
     const records = positions.flatMap(pos => pos.liquidityProfile.map(entry => ({
-        walletAddress,
+        walletAddress: pos.owner,
         positionId: pos.id,
         binId: entry.binId,
         price: entry.price,
@@ -81,7 +81,7 @@ async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
         positionYAmount: entry.positionYAmount,
         liquidityShare: entry.liquidityShare,
     })));
-    await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers);
+    await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers, false); // Overwrite mode
 }
 exports.generateAndWriteLiquidityProfileCSV = generateAndWriteLiquidityProfileCSV;
 async function generateAndWriteKrystalCSV(walletAddress, positions) {
@@ -127,6 +127,6 @@ async function generateAndWriteKrystalCSV(walletAddress, positions) {
         unclaimedFeeY: calculateQuantity(pos.unclaimedFeeY, pos.tokenYDecimals),
         feeApr: pos.feeApr,
     }));
-    await writeCSV(KRYSTAL_CSV_PATH, records, headers);
+    await writeCSV(KRYSTAL_CSV_PATH, records, headers, true);
 }
 exports.generateAndWriteKrystalCSV = generateAndWriteKrystalCSV;

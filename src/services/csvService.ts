@@ -9,18 +9,17 @@ const METEORA_CSV_PATH = path.join(__dirname, '../../LP_meteora_positions.csv');
 const LIQUIDITY_PROFILE_CSV_PATH = path.join(__dirname, '../../liquidity_profile.csv');
 const KRYSTAL_CSV_PATH = path.join(__dirname, '../../LP_krystal_positions.csv');
 
-async function writeCSV<T extends Record<string, any>>(filePath: string, records: T[], headers: { id: string; title: string }[]): Promise<void> {
+async function writeCSV<T extends Record<string, any>>(filePath: string, records: T[], headers: { id: string; title: string }[], append: boolean = true): Promise<void> {
   const csvWriter = createObjectCsvWriter({
     path: filePath,
     header: headers,
-    append: fs.existsSync(filePath), // Append to existing file
+    append: append && fs.existsSync(filePath),
   });
 
   await csvWriter.writeRecords(records);
-  console.log(`CSV written to ${filePath} with ${records.length} rows`);
+  console.log(`CSV ${append ? 'appended' : 'written'} to ${filePath} with ${records.length} rows`);
 }
 
-// Helper function to calculate human-readable quantity for Krystal
 function calculateQuantity(rawAmount: string, decimals: number): number {
   return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
@@ -28,7 +27,7 @@ function calculateQuantity(rawAmount: string, decimals: number): number {
 export async function generateAndWriteMeteoraCSV(walletAddress: string, positions: PositionInfo[]): Promise<void> {
   const headers = [
     { id: 'timestamp', title: 'Timestamp' },
-    { id: 'walletAddress', title: 'Wallet Address' }, // Added wallet address
+    { id: 'walletAddress', title: 'Wallet Address' },
     { id: 'positionKey', title: 'Position Key' },
     { id: 'poolAddress', title: 'Pool Address' },
     { id: 'tokenXAddress', title: 'Token X Address' },
@@ -43,9 +42,10 @@ export async function generateAndWriteMeteoraCSV(walletAddress: string, position
   ];
 
   const records = positions
+    .filter(pos => !(pos.amountX === '0' && pos.amountY === '0'))
     .map(pos => ({
       timestamp: new Date().toISOString(),
-      walletAddress, // Include wallet address
+      walletAddress,
       positionKey: pos.id,
       poolAddress: pos.pool,
       tokenXAddress: pos.tokenX,
@@ -59,12 +59,12 @@ export async function generateAndWriteMeteoraCSV(walletAddress: string, position
       unclaimedFeeY: pos.unclaimedFeeY,
     }));
 
-  await writeCSV(METEORA_CSV_PATH, records, headers);
+  await writeCSV(METEORA_CSV_PATH, records, headers, true);
 }
 
-export async function generateAndWriteLiquidityProfileCSV(walletAddress: string, positions: PositionInfo[]): Promise<void> {
+export async function generateAndWriteLiquidityProfileCSV(_walletAddress: string, positions: PositionInfo[]): Promise<void> {
   const headers = [
-    { id: 'walletAddress', title: 'Wallet Address' }, // Added wallet address
+    { id: 'walletAddress', title: 'Wallet Address' },
     { id: 'positionId', title: 'Position ID' },
     { id: 'binId', title: 'Bin ID' },
     { id: 'price', title: 'Price' },
@@ -76,7 +76,7 @@ export async function generateAndWriteLiquidityProfileCSV(walletAddress: string,
 
   const records = positions.flatMap(pos =>
     pos.liquidityProfile.map(entry => ({
-      walletAddress, // Include wallet address
+      walletAddress: pos.owner, // Use the position's owner field instead of passed walletAddress
       positionId: pos.id,
       binId: entry.binId,
       price: entry.price,
@@ -87,13 +87,13 @@ export async function generateAndWriteLiquidityProfileCSV(walletAddress: string,
     }))
   );
 
-  await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers);
+  await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers, false); // Overwrite mode
 }
 
 export async function generateAndWriteKrystalCSV(walletAddress: string, positions: KrystalPositionInfo[]): Promise<void> {
   const headers = [
     { id: 'timestamp', title: 'Timestamp' },
-    { id: 'walletAddress', title: 'Wallet Address' }, // Added wallet address
+    { id: 'walletAddress', title: 'Wallet Address' },
     { id: 'chain', title: 'Chain' },
     { id: 'protocol', title: 'Protocol' },
     { id: 'poolAddress', title: 'Pool Address' },
@@ -115,7 +115,7 @@ export async function generateAndWriteKrystalCSV(walletAddress: string, position
 
   const records = positions.map(pos => ({
     timestamp: new Date().toISOString(),
-    walletAddress, // Include wallet address
+    walletAddress,
     chain: pos.chain,
     protocol: pos.protocol,
     poolAddress: pos.poolAddress,
@@ -135,5 +135,5 @@ export async function generateAndWriteKrystalCSV(walletAddress: string, position
     feeApr: pos.feeApr,
   }));
 
-  await writeCSV(KRYSTAL_CSV_PATH, records, headers);
+  await writeCSV(KRYSTAL_CSV_PATH, records, headers, true);
 }
