@@ -8,31 +8,27 @@ exports.generateAndWriteKrystalCSV = exports.generateAndWriteLiquidityProfileCSV
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const csv_writer_1 = require("csv-writer");
-function getMeteoraCsvPath(walletAddress) {
-    return path_1.default.join(__dirname, `../../LP_meteora_positions_${walletAddress}.csv`);
-}
-function getLiquidityProfileCsvPath(walletAddress) {
-    return path_1.default.join(__dirname, `../../liquidity_profile_${walletAddress}.csv`);
-}
-function getKrystalCsvPath(walletAddress) {
-    return path_1.default.join(__dirname, `../../LP_krystal_positions_${walletAddress}.csv`);
-}
+// Fixed file paths for consolidated CSVs
+const METEORA_CSV_PATH = path_1.default.join(__dirname, '../../LP_meteora_positions.csv');
+const LIQUIDITY_PROFILE_CSV_PATH = path_1.default.join(__dirname, '../../liquidity_profile.csv');
+const KRYSTAL_CSV_PATH = path_1.default.join(__dirname, '../../LP_krystal_positions.csv');
 async function writeCSV(filePath, records, headers) {
     const csvWriter = (0, csv_writer_1.createObjectCsvWriter)({
         path: filePath,
         header: headers,
-        append: fs_1.default.existsSync(filePath),
+        append: fs_1.default.existsSync(filePath), // Append to existing file
     });
     await csvWriter.writeRecords(records);
     console.log(`CSV written to ${filePath} with ${records.length} rows`);
 }
-// Helper function to calculate human-readable quantity
+// Helper function to calculate human-readable quantity for Krystal
 function calculateQuantity(rawAmount, decimals) {
     return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
 async function generateAndWriteMeteoraCSV(walletAddress, positions) {
     const headers = [
         { id: 'timestamp', title: 'Timestamp' },
+        { id: 'walletAddress', title: 'Wallet Address' },
         { id: 'positionKey', title: 'Position Key' },
         { id: 'poolAddress', title: 'Pool Address' },
         { id: 'tokenXAddress', title: 'Token X Address' },
@@ -46,9 +42,9 @@ async function generateAndWriteMeteoraCSV(walletAddress, positions) {
         { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
     ];
     const records = positions
-        .filter(pos => !(pos.amountX === '0' && pos.amountY === '0'))
         .map(pos => ({
         timestamp: new Date().toISOString(),
+        walletAddress,
         positionKey: pos.id,
         poolAddress: pos.pool,
         tokenXAddress: pos.tokenX,
@@ -61,11 +57,12 @@ async function generateAndWriteMeteoraCSV(walletAddress, positions) {
         unclaimedFeeX: pos.unclaimedFeeX,
         unclaimedFeeY: pos.unclaimedFeeY,
     }));
-    await writeCSV(getMeteoraCsvPath(walletAddress), records, headers);
+    await writeCSV(METEORA_CSV_PATH, records, headers);
 }
 exports.generateAndWriteMeteoraCSV = generateAndWriteMeteoraCSV;
 async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
     const headers = [
+        { id: 'walletAddress', title: 'Wallet Address' },
         { id: 'positionId', title: 'Position ID' },
         { id: 'binId', title: 'Bin ID' },
         { id: 'price', title: 'Price' },
@@ -75,6 +72,7 @@ async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
         { id: 'liquidityShare', title: 'Liquidity Share' },
     ];
     const records = positions.flatMap(pos => pos.liquidityProfile.map(entry => ({
+        walletAddress,
         positionId: pos.id,
         binId: entry.binId,
         price: entry.price,
@@ -83,12 +81,13 @@ async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
         positionYAmount: entry.positionYAmount,
         liquidityShare: entry.liquidityShare,
     })));
-    await writeCSV(getLiquidityProfileCsvPath(walletAddress), records, headers);
+    await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers);
 }
 exports.generateAndWriteLiquidityProfileCSV = generateAndWriteLiquidityProfileCSV;
 async function generateAndWriteKrystalCSV(walletAddress, positions) {
     const headers = [
         { id: 'timestamp', title: 'Timestamp' },
+        { id: 'walletAddress', title: 'Wallet Address' },
         { id: 'chain', title: 'Chain' },
         { id: 'protocol', title: 'Protocol' },
         { id: 'poolAddress', title: 'Pool Address' },
@@ -109,6 +108,7 @@ async function generateAndWriteKrystalCSV(walletAddress, positions) {
     ];
     const records = positions.map(pos => ({
         timestamp: new Date().toISOString(),
+        walletAddress,
         chain: pos.chain,
         protocol: pos.protocol,
         poolAddress: pos.poolAddress,
@@ -127,6 +127,6 @@ async function generateAndWriteKrystalCSV(walletAddress, positions) {
         unclaimedFeeY: calculateQuantity(pos.unclaimedFeeY, pos.tokenYDecimals),
         feeApr: pos.feeApr,
     }));
-    await writeCSV(getKrystalCsvPath(walletAddress), records, headers);
+    await writeCSV(KRYSTAL_CSV_PATH, records, headers);
 }
 exports.generateAndWriteKrystalCSV = generateAndWriteKrystalCSV;
