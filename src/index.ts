@@ -1,29 +1,49 @@
-import { retrievePositions } from './services/positionService';
-import { generateSummaryCSV } from './services/summaryCSVGenerator';
-import { startScheduler } from './services/scheduler';
+// src/index.ts
 import { config } from './config';
+import { retrieveMeteoraPositions } from './services/meteoraPositionService';
+import { retrieveKrystalPositions } from './services/krystalPositionService';
+import { generateAndWriteMeteoraCSV, generateAndWriteLiquidityProfileCSV, generateAndWriteKrystalCSV } from './services/csvService';
+import { startScheduler } from './services/scheduler';
 
-async function main() {
-  try {
-    if (!config.WALLET_ADDRESS) {
-      throw new Error('WALLET_ADDRESS is not set in .env file.');
-    }
-
-    console.log('Fetching positions for wallet:', config.WALLET_ADDRESS);
-    const positions = await retrievePositions(config.WALLET_ADDRESS);
-
-    if (!positions || positions.length === 0) {
-      console.log('No positions found.');
-    } else {
-      console.log('Generating LP meteora positions CSV...');
-      await generateSummaryCSV(positions);
-      console.log('CSV generated successfully.');
-    }
-
-    startScheduler(config.SCHEDULE_INTERVAL);
-  } catch (error) {
-    console.error('Error during execution:', error);
+async function processSolanaWallet(walletAddress: string) {
+  console.log(`Processing Solana wallet: ${walletAddress}`);
+  const meteoraPositions = await retrieveMeteoraPositions(walletAddress);
+  if (meteoraPositions.length > 0) {
+    await generateAndWriteMeteoraCSV(walletAddress, meteoraPositions);
+    await generateAndWriteLiquidityProfileCSV(walletAddress, meteoraPositions);
+  } else {
+    console.log(`No Meteora positions found for ${walletAddress}`);
   }
 }
 
-main();
+async function processEvmWallet(walletAddress: string) {
+  console.log(`Processing EVM wallet: ${walletAddress}`);
+  const krystalPositions = await retrieveKrystalPositions(walletAddress);
+  if (krystalPositions.length > 0) {
+    await generateAndWriteKrystalCSV(walletAddress, krystalPositions);
+  } else {
+    console.log(`No Krystal positions found for ${walletAddress}`);
+  }
+}
+
+async function main() {
+  console.log('Starting lp-monitor...');
+
+  // Process Solana wallets
+  for (const solWallet of config.SOLANA_WALLET_ADDRESSES) {
+    await processSolanaWallet(solWallet);
+  }
+
+  // Process EVM wallets
+  for (const evmWallet of config.EVM_WALLET_ADDRESSES) {
+    await processEvmWallet(evmWallet);
+  }
+
+  // Start the scheduler
+  startScheduler();
+}
+
+main().catch((error) => {
+  console.error('Error in main:', error);
+  process.exit(1);
+});

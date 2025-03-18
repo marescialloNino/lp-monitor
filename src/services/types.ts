@@ -29,3 +29,33 @@ export interface PositionInfo {
   unclaimedFeeY: string;
   liquidityProfile: LiquidityProfileEntry[];
 }
+
+
+export interface KrystalPositionInfo {
+  id: string;
+  owner: string;
+  chain: string;
+  protocol: string;
+  poolAddress: string;
+  tokenXSymbol: string;
+  tokenYSymbol: string;
+  tokenXAddress: string;
+  tokenYAddress: string;
+  tokenXAmount: string; // Current amount
+  tokenYAmount: string; // Current amount
+  tokenXProvidedAmount: string; // Initial provided amount
+  tokenYProvidedAmount: string; // Initial provided amount
+  tokenXDecimals: number;
+  tokenYDecimals: number;
+  minPrice: number; // Lower price boundary
+  maxPrice: number; // Upper price boundary
+  currentPrice: number; // Current pool price
+  isInRange: boolean; // Derived from status
+  initialValueUsd: number; // initialUnderlyingValue
+  actualValueUsd: number; // currentPositionValue
+  impermanentLoss: number;
+  unclaimedFeeX: string;
+  unclaimedFeeY: string;
+  feeApr: number;
+  totalFeeEarnedUsd: number; // From statsByChain if available
+}

@@ -1,38 +1,43 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.startScheduler = void 0;
 // src/services/scheduler.ts
-const node_cron_1 = __importDefault(require("node-cron"));
-const positionService_1 = require("./positionService");
-const summaryCSVGenerator_1 = require("./summaryCSVGenerator");
-const WALLET_ADDRESS = 'Yj7SzJwGkHuUKBfFytp8TPfj997ntSicCCuJLiB39kE';
-/**
- * Starts a scheduled job to retrieve LP positions and append them to 'LP_meteora_positions.csv'.
- * @param intervalMinutes - How often to run the job in minutes.
- */
-function startScheduler(intervalMinutes = 10) {
-    if (!Number.isInteger(intervalMinutes) || intervalMinutes <= 0) {
-        throw new Error('Interval must be a positive integer in minutes');
-    }
-    const cronExpression = `*/${intervalMinutes} * * * *`;
-    node_cron_1.default.schedule(cronExpression, async () => {
-        console.log(`Running scheduled job to retrieve LP positions every ${intervalMinutes} minutes...`);
+const node_cron_1 = require("node-cron");
+const config_1 = require("../config");
+const meteoraPositionService_1 = require("./meteoraPositionService");
+const krystalPositionService_1 = require("./krystalPositionService");
+const csvService_1 = require("./csvService");
+function startScheduler() {
+    console.log(`Scheduling position retrieval every ${config_1.config.SCHEDULE_INTERVAL} minutes...`);
+    (0, node_cron_1.schedule)(`*/${config_1.config.SCHEDULE_INTERVAL} * * * *`, async () => {
         try {
-            const positions = await (0, positionService_1.retrievePositions)(WALLET_ADDRESS);
-            if (!positions || positions.length === 0) {
-                console.log('No positions found during scheduled job.');
-                return;
+            // Process Solana wallets
+            for (const solWallet of config_1.config.SOLANA_WALLET_ADDRESSES) {
+                console.log(`Scheduled run for Solana wallet: ${solWallet}`);
+                const meteoraPositions = await (0, meteoraPositionService_1.retrieveMeteoraPositions)(solWallet);
+                if (meteoraPositions.length > 0) {
+                    await (0, csvService_1.generateAndWriteMeteoraCSV)(solWallet, meteoraPositions);
+                    await (0, csvService_1.generateAndWriteLiquidityProfileCSV)(solWallet, meteoraPositions);
+                }
+                else {
+                    console.log(`No Meteora positions found for ${solWallet} during scheduled run`);
+                }
             }
-            await (0, summaryCSVGenerator_1.generateSummaryCSV)(positions);
-            console.log('Positions retrieved and LP meteora positions CSV updated.');
+            // Process EVM wallets
+            for (const evmWallet of config_1.config.EVM_WALLET_ADDRESSES) {
+                console.log(`Scheduled run for EVM wallet: ${evmWallet}`);
+                const krystalPositions = await (0, krystalPositionService_1.retrieveKrystalPositions)(evmWallet);
+                if (krystalPositions.length > 0) {
+                    await (0, csvService_1.generateAndWriteKrystalCSV)(evmWallet, krystalPositions);
+                }
+                else {
+                    console.log(`No Krystal positions found for ${evmWallet} during scheduled run`);
+                }
+            }
         }
         catch (error) {
-            console.error('Error during scheduled job:', error);
+            console.error('Error in scheduled task:', error);
         }
     });
-    console.log(`Scheduler started. The job will run every ${intervalMinutes} minutes.`);
 }
 exports.startScheduler = startScheduler;
