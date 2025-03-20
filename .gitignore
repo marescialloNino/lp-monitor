@@ -2,3 +2,7 @@
 node_modules
 positions.csv
 *.csv
+
+__pycache__/
+*.py[cod]
+*$py.class

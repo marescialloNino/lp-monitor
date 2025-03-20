@@ -4,10 +4,12 @@ import path from 'path';
 import { createObjectCsvWriter } from 'csv-writer';
 import { PositionInfo, LiquidityProfileEntry, KrystalPositionInfo } from './types';
 
-// Fixed file paths for consolidated CSVs
-const METEORA_CSV_PATH = path.join(__dirname, '../../LP_meteora_positions.csv');
-const LIQUIDITY_PROFILE_CSV_PATH = path.join(__dirname, '../../liquidity_profile.csv');
-const KRYSTAL_CSV_PATH = path.join(__dirname, '../../LP_krystal_positions.csv');
+// Fixed file paths for history and latest positions
+const METEORA_HISTORY_CSV_PATH = path.join(__dirname, '../../../lp-data/LP_meteora_positions_history.csv');
+const METEORA_LATEST_CSV_PATH = path.join(__dirname, '../../../lp-data/LP_meteora_positions_latest.csv');
+const KRYSTAL_HISTORY_CSV_PATH = path.join(__dirname, '../../../lp-data/LP_krystal_positions_history.csv');
+const KRYSTAL_LATEST_CSV_PATH = path.join(__dirname, '../../../lp-data/LP_krystal_positions_latest.csv');
+const LIQUIDITY_PROFILE_CSV_PATH = path.join(__dirname, '../../../lp-data/meteora_liquidity_profiles.csv');
 
 async function writeCSV<T extends Record<string, any>>(filePath: string, records: T[], headers: { id: string; title: string }[], append: boolean = true): Promise<void> {
   const csvWriter = createObjectCsvWriter({
@@ -20,6 +22,7 @@ async function writeCSV<T extends Record<string, any>>(filePath: string, records
   console.log(`CSV ${append ? 'appended' : 'written'} to ${filePath} with ${records.length} rows`);
 }
 
+// Helper function to calculate human-readable quantity for Krystal
 function calculateQuantity(rawAmount: string, decimals: number): number {
   return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
@@ -59,7 +62,10 @@ export async function generateAndWriteMeteoraCSV(walletAddress: string, position
       unclaimedFeeY: pos.unclaimedFeeY,
     }));
 
-  await writeCSV(METEORA_CSV_PATH, records, headers, true);
+  // Write to history file (append)
+  await writeCSV(METEORA_HISTORY_CSV_PATH, records, headers, true);
+  // Write to latest file (overwrite)
+  await writeCSV(METEORA_LATEST_CSV_PATH, records, headers, false);
 }
 
 export async function generateAndWriteLiquidityProfileCSV(_walletAddress: string, positions: PositionInfo[]): Promise<void> {
@@ -76,7 +82,7 @@ export async function generateAndWriteLiquidityProfileCSV(_walletAddress: string
 
   const records = positions.flatMap(pos =>
     pos.liquidityProfile.map(entry => ({
-      walletAddress: pos.owner, // Use the position's owner field instead of passed walletAddress
+      walletAddress: pos.owner,
       positionId: pos.id,
       binId: entry.binId,
       price: entry.price,
@@ -135,5 +141,8 @@ export async function generateAndWriteKrystalCSV(walletAddress: string, position
     feeApr: pos.feeApr,
   }));
 
-  await writeCSV(KRYSTAL_CSV_PATH, records, headers, true);
+  // Write to history file (append)
+  await writeCSV(KRYSTAL_HISTORY_CSV_PATH, records, headers, true);
+  // Write to latest file (overwrite)
+  await writeCSV(KRYSTAL_LATEST_CSV_PATH, records, headers, false);
 }
