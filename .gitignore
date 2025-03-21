@@ -2,6 +2,7 @@
 node_modules
 positions.csv
 *.csv
+*.log
 
 __pycache__/
 *.py[cod]

@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateAndWriteKrystalCSV = exports.generateAndWriteLiquidityProfileCSV = exports.generateAndWriteMeteoraCSV = void 0;
+exports.writeKrystalLatestCSV = exports.writeMeteoraLatestCSV = exports.KRYSTAL_LATEST_HEADERS = exports.METEORA_LATEST_HEADERS = exports.generateKrystalCSV = exports.generateAndWriteLiquidityProfileCSV = exports.generateMeteoraCSV = void 0;
 // src/services/csvService.ts
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -27,7 +27,7 @@ async function writeCSV(filePath, records, headers, append = true) {
 function calculateQuantity(rawAmount, decimals) {
     return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
-async function generateAndWriteMeteoraCSV(walletAddress, positions) {
+async function generateMeteoraCSV(walletAddress, positions) {
     const headers = [
         { id: 'timestamp', title: 'Timestamp' },
         { id: 'walletAddress', title: 'Wallet Address' },
@@ -62,11 +62,11 @@ async function generateAndWriteMeteoraCSV(walletAddress, positions) {
     }));
     // Write to history file (append)
     await writeCSV(METEORA_HISTORY_CSV_PATH, records, headers, true);
-    // Write to latest file (overwrite)
-    await writeCSV(METEORA_LATEST_CSV_PATH, records, headers, false);
+    // Return records for latest file
+    return records;
 }
-exports.generateAndWriteMeteoraCSV = generateAndWriteMeteoraCSV;
-async function generateAndWriteLiquidityProfileCSV(_walletAddress, positions) {
+exports.generateMeteoraCSV = generateMeteoraCSV;
+async function generateAndWriteLiquidityProfileCSV(walletAddress, positions) {
     const headers = [
         { id: 'walletAddress', title: 'Wallet Address' },
         { id: 'positionId', title: 'Position ID' },
@@ -90,7 +90,7 @@ async function generateAndWriteLiquidityProfileCSV(_walletAddress, positions) {
     await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers, false); // Overwrite mode
 }
 exports.generateAndWriteLiquidityProfileCSV = generateAndWriteLiquidityProfileCSV;
-async function generateAndWriteKrystalCSV(walletAddress, positions) {
+async function generateKrystalCSV(walletAddress, positions) {
     const headers = [
         { id: 'timestamp', title: 'Timestamp' },
         { id: 'walletAddress', title: 'Wallet Address' },
@@ -135,7 +135,52 @@ async function generateAndWriteKrystalCSV(walletAddress, positions) {
     }));
     // Write to history file (append)
     await writeCSV(KRYSTAL_HISTORY_CSV_PATH, records, headers, true);
-    // Write to latest file (overwrite)
-    await writeCSV(KRYSTAL_LATEST_CSV_PATH, records, headers, false);
+    // Return records for latest file
+    return records;
 }
-exports.generateAndWriteKrystalCSV = generateAndWriteKrystalCSV;
+exports.generateKrystalCSV = generateKrystalCSV;
+// Export headers and write functions for latest CSVs
+exports.METEORA_LATEST_HEADERS = [
+    { id: 'timestamp', title: 'Timestamp' },
+    { id: 'walletAddress', title: 'Wallet Address' },
+    { id: 'positionKey', title: 'Position Key' },
+    { id: 'poolAddress', title: 'Pool Address' },
+    { id: 'tokenXAddress', title: 'Token X Address' },
+    { id: 'tokenYAddress', title: 'Token Y Address' },
+    { id: 'amountX', title: 'Token X Qty' },
+    { id: 'amountY', title: 'Token Y Qty' },
+    { id: 'lowerBinId', title: 'Lower Boundary' },
+    { id: 'upperBinId', title: 'Upper Boundary' },
+    { id: 'isInRange', title: 'Is In Range' },
+    { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+    { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+];
+exports.KRYSTAL_LATEST_HEADERS = [
+    { id: 'timestamp', title: 'Timestamp' },
+    { id: 'walletAddress', title: 'Wallet Address' },
+    { id: 'chain', title: 'Chain' },
+    { id: 'protocol', title: 'Protocol' },
+    { id: 'poolAddress', title: 'Pool Address' },
+    { id: 'tokenXAddress', title: 'Token X Address' },
+    { id: 'tokenXQty', title: 'Token X Qty' },
+    { id: 'tokenYAddress', title: 'Token Y Address' },
+    { id: 'tokenYQty', title: 'Token Y Qty' },
+    { id: 'minPrice', title: 'Min Price' },
+    { id: 'maxPrice', title: 'Max Price' },
+    { id: 'currentPrice', title: 'Current Price' },
+    { id: 'isInRange', title: 'Is In Range' },
+    { id: 'initialValueUsd', title: 'Initial Value USD' },
+    { id: 'actualValueUsd', title: 'Actual Value USD' },
+    { id: 'impermanentLoss', title: 'Impermanent Loss' },
+    { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+    { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+    { id: 'feeApr', title: 'Fee APR' },
+];
+async function writeMeteoraLatestCSV(records) {
+    await writeCSV(METEORA_LATEST_CSV_PATH, records, exports.METEORA_LATEST_HEADERS, false);
+}
+exports.writeMeteoraLatestCSV = writeMeteoraLatestCSV;
+async function writeKrystalLatestCSV(records) {
+    await writeCSV(KRYSTAL_LATEST_CSV_PATH, records, exports.KRYSTAL_LATEST_HEADERS, false);
+}
+exports.writeKrystalLatestCSV = writeKrystalLatestCSV;

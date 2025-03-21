@@ -27,7 +27,7 @@ function calculateQuantity(rawAmount: string, decimals: number): number {
   return parseFloat(rawAmount) / Math.pow(10, decimals);
 }
 
-export async function generateAndWriteMeteoraCSV(walletAddress: string, positions: PositionInfo[]): Promise<void> {
+export async function generateMeteoraCSV(walletAddress: string, positions: PositionInfo[]): Promise<any[]> {
   const headers = [
     { id: 'timestamp', title: 'Timestamp' },
     { id: 'walletAddress', title: 'Wallet Address' },
@@ -64,11 +64,11 @@ export async function generateAndWriteMeteoraCSV(walletAddress: string, position
 
   // Write to history file (append)
   await writeCSV(METEORA_HISTORY_CSV_PATH, records, headers, true);
-  // Write to latest file (overwrite)
-  await writeCSV(METEORA_LATEST_CSV_PATH, records, headers, false);
+  // Return records for latest file
+  return records;
 }
 
-export async function generateAndWriteLiquidityProfileCSV(_walletAddress: string, positions: PositionInfo[]): Promise<void> {
+export async function generateAndWriteLiquidityProfileCSV(walletAddress: string, positions: PositionInfo[]): Promise<void> {
   const headers = [
     { id: 'walletAddress', title: 'Wallet Address' },
     { id: 'positionId', title: 'Position ID' },
@@ -96,7 +96,7 @@ export async function generateAndWriteLiquidityProfileCSV(_walletAddress: string
   await writeCSV(LIQUIDITY_PROFILE_CSV_PATH, records, headers, false); // Overwrite mode
 }
 
-export async function generateAndWriteKrystalCSV(walletAddress: string, positions: KrystalPositionInfo[]): Promise<void> {
+export async function generateKrystalCSV(walletAddress: string, positions: KrystalPositionInfo[]): Promise<any[]> {
   const headers = [
     { id: 'timestamp', title: 'Timestamp' },
     { id: 'walletAddress', title: 'Wallet Address' },
@@ -143,6 +143,53 @@ export async function generateAndWriteKrystalCSV(walletAddress: string, position
 
   // Write to history file (append)
   await writeCSV(KRYSTAL_HISTORY_CSV_PATH, records, headers, true);
-  // Write to latest file (overwrite)
-  await writeCSV(KRYSTAL_LATEST_CSV_PATH, records, headers, false);
+  // Return records for latest file
+  return records;
+}
+
+// Export headers and write functions for latest CSVs
+export const METEORA_LATEST_HEADERS = [
+  { id: 'timestamp', title: 'Timestamp' },
+  { id: 'walletAddress', title: 'Wallet Address' },
+  { id: 'positionKey', title: 'Position Key' },
+  { id: 'poolAddress', title: 'Pool Address' },
+  { id: 'tokenXAddress', title: 'Token X Address' },
+  { id: 'tokenYAddress', title: 'Token Y Address' },
+  { id: 'amountX', title: 'Token X Qty' },
+  { id: 'amountY', title: 'Token Y Qty' },
+  { id: 'lowerBinId', title: 'Lower Boundary' },
+  { id: 'upperBinId', title: 'Upper Boundary' },
+  { id: 'isInRange', title: 'Is In Range' },
+  { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+  { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+];
+
+export const KRYSTAL_LATEST_HEADERS = [
+  { id: 'timestamp', title: 'Timestamp' },
+  { id: 'walletAddress', title: 'Wallet Address' },
+  { id: 'chain', title: 'Chain' },
+  { id: 'protocol', title: 'Protocol' },
+  { id: 'poolAddress', title: 'Pool Address' },
+  { id: 'tokenXAddress', title: 'Token X Address' },
+  { id: 'tokenXQty', title: 'Token X Qty' },
+  { id: 'tokenYAddress', title: 'Token Y Address' },
+  { id: 'tokenYQty', title: 'Token Y Qty' },
+  { id: 'minPrice', title: 'Min Price' },
+  { id: 'maxPrice', title: 'Max Price' },
+  { id: 'currentPrice', title: 'Current Price' },
+  { id: 'isInRange', title: 'Is In Range' },
+  { id: 'initialValueUsd', title: 'Initial Value USD' },
+  { id: 'actualValueUsd', title: 'Actual Value USD' },
+  { id: 'impermanentLoss', title: 'Impermanent Loss' },
+  { id: 'unclaimedFeeX', title: 'Unclaimed Fee X' },
+  { id: 'unclaimedFeeY', title: 'Unclaimed Fee Y' },
+  { id: 'feeApr', title: 'Fee APR' },
+];
+
+export async function writeMeteoraLatestCSV(records: any[]): Promise<void> {
+  await writeCSV(METEORA_LATEST_CSV_PATH, records, METEORA_LATEST_HEADERS, false);
+}
+
+export async function writeKrystalLatestCSV(records: any[]): Promise<void> {
+  await writeCSV(KRYSTAL_LATEST_CSV_PATH, records, KRYSTAL_LATEST_HEADERS, false);
 }
